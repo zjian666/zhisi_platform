@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习素材中心 - 智思平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- 全局变量 --- */
+        :root {
+            --primary-color: #D32F2F;
+            --primary-light: #FFEBEE;
+            --text-main: #333;
+            --text-sub: #666;
+            --bg-light: #f5f7fa;
+            --white: #ffffff;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-light); 
+            color: var(--text-main); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* --- 顶部导航 --- */
+        header { 
+            background: var(--white); 
+            height: 60px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 20px; 
+            z-index: 1001; 
+            flex-shrink: 0;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+
+        .logo { 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            color: var(--primary-color); 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+
+        .user-info { 
+            font-size: 0.9rem; 
+            color: var(--text-sub); 
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* --- 布局容器 --- */
+        .layout-container { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+        /* --- 左侧边栏 (课程树) --- */
+        aside { 
+            width: 260px; 
+            background: var(--white); 
+            border-right: 1px solid var(--border-color); 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .sidebar-title { padding: 20px; font-weight: bold; border-bottom: 1px solid var(--border-color); background: #fafafa; }
+        
+        .course-group { 
+            padding: 15px 20px 10px; 
+            font-size: 0.85rem; 
+            color: #999; 
+            font-weight: bold; 
+        }
+        
+        .course-link { 
+            display: block; 
+            padding: 12px 20px 12px 30px; 
+            color: var(--text-main); 
+            text-decoration: none; 
+            border-left: 4px solid transparent; 
+            transition: 0.2s; 
+            font-size: 0.95rem; 
+        }
+        
+        .course-link:hover { background: var(--bg-light); color: var(--primary-color); }
+        .course-link.active { 
+            border-left-color: var(--primary-color); 
+            background: var(--primary-light); 
+            color: var(--primary-color); 
+            font-weight: bold; 
+        }
+
+        /* 侧边栏遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        /* --- 右侧主内容区 --- */
+        main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+            padding: 20px; 
+            position: relative;
+        }
+
+        .page-title { margin-bottom: 20px; font-size: 1.4rem; color: var(--text-main); }
+
+        /* --- 顶部功能切换 Tabs --- */
+        .main-tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 25px; 
+            border-bottom: 1px solid #ddd; 
+            overflow-x: auto; /* 允许横向滚动 */
+            white-space: nowrap;
+            padding-bottom: 1px;
+        }
+        
+        .main-tabs::-webkit-scrollbar { height: 0; display: none; } /* 隐藏滚动条 */
+
+        .tab-btn { 
+            padding: 10px 20px; 
+            cursor: pointer; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            color: var(--text-sub); 
+            border-bottom: 3px solid transparent; 
+            transition: 0.3s; 
+            margin-bottom: -2px; 
+            flex-shrink: 0;
+        }
+        
+        .tab-btn:hover { color: var(--primary-color); }
+        .tab-btn.active { border-bottom-color: var(--primary-color); color: var(--primary-color); }
+
+        /* --- 内容面板通用样式 --- */
+        .content-panel { display: none; animation: fadeIn 0.4s; padding-bottom: 40px; }
+        .content-panel.active { display: block; }
+
+        /* ---------------- 面板1: 资源库 ---------------- */
+        /* 筛选标签 */
+        .filter-tags { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 25px; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+        }
+        
+        .filter-tag { 
+            padding: 6px 16px; 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            border-radius: 50px; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            color: #666; 
+            white-space: nowrap;
+        }
+        
+        .filter-tag.active { 
+            background: var(--primary-color); 
+            color: white; 
+            border-color: var(--primary-color); 
+            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.2);
+        }
+        
+        /* 资源网格 */
+        .resource-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+            gap: 20px; 
+        }
+        
+        .res-card { 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: var(--shadow);
+            overflow: hidden; 
+            transition: 0.3s; 
+            position: relative; 
+            border: 1px solid transparent;
+        }
+        
+        .res-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            border-color: var(--primary-light);
+        }
+        
+        .res-icon { 
+            height: 140px; 
+            background: #f9f9f9; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 3.5rem; 
+            color: #ccc; 
+        }
+        
+        .res-icon.video { color: #E53935; background: #FFEBEE; }
+        .res-icon.pdf { color: #1E88E5; background: #E3F2FD; }
+        .res-icon.doc { color: #43A047; background: #E8F5E9; }
+        
+        .res-info { padding: 15px; }
+        .res-title { font-weight: bold; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem; }
+        .res-meta { font-size: 0.8rem; color: #999; display: flex; justify-content: space-between; align-items: center; }
+        
+        .res-actions { margin-top: 15px; text-align: right; }
+        .btn-sm { 
+            padding: 6px 14px; 
+            font-size: 0.85rem; 
+            border-radius: 6px; 
+            border: 1px solid #ddd; 
+            cursor: pointer; 
+            background: white; 
+            color: #666; 
+            transition: 0.2s;
+        }
+        .btn-sm:hover { color: var(--primary-color); border-color: var(--primary-color); background: var(--primary-light); }
+
+        /* ---------------- 面板2: 我的云盘 ---------------- */
+        .cloud-upload-area { 
+            border: 2px dashed #ccc; 
+            border-radius: 12px; 
+            padding: 50px 20px; 
+            text-align: center; 
+            background: white; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            margin-bottom: 30px; 
+        }
+        
+        .cloud-upload-area:hover { border-color: var(--primary-color); background: var(--primary-light); }
+        .upload-icon { font-size: 48px; color: var(--primary-color); margin-bottom: 15px; opacity: 0.7; }
+        
+        .file-list { background: white; border-radius: 10px; box-shadow: var(--shadow); padding: 10px; }
+        .file-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 15px; 
+            border-bottom: 1px solid #eee; 
+            justify-content: space-between; 
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .file-item:last-child { border-bottom: none; }
+        .file-item:hover { background: #f9f9f9; }
+        
+        .file-left { display: flex; align-items: center; gap: 15px; overflow: hidden; }
+        .file-info { min-width: 0; } /* 修复 flex 子项溢出问题 */
+        .file-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* ---------------- 面板3: 我要提问 ---------------- */
+        .qa-container { display: flex; gap: 30px; }
+        
+        .qa-form { 
+            flex: 1; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: var(--shadow); 
+            height: fit-content; 
+        }
+        
+        .qa-list { flex: 1.5; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; }
+        .form-control { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            font-family: inherit; 
+            font-size: 0.95rem;
+            transition: 0.3s;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary-color); }
+        
+        .btn-submit { 
+            background: var(--primary-color); 
+            color: white; 
+            border: none; 
+            padding: 12px 25px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: bold; 
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        .btn-submit:hover { background: #b71c1c; box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3); }
+
+        .qa-card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            border: 1px solid #f0f0f0; 
+            box-shadow: var(--shadow);
+        }
+        
+        .qa-status { float: right; font-size: 0.8rem; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
+        .status-solved { background: #E8F5E9; color: #2E7D32; }
+        .status-pending { background: #FFF3E0; color: #EF6C00; }
+        
+        .q-title { font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; line-height: 1.4; padding-right: 80px; }
+        .q-desc { color: #555; font-size: 0.95rem; margin-bottom: 15px; line-height: 1.6; }
+        
+        .a-box { 
+            background: #f9f9f9; 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            border-left: 4px solid var(--primary-color); 
+            line-height: 1.6;
+        }
+        .a-user { font-weight: bold; margin-bottom: 5px; color: var(--primary-color); display: flex; align-items: center; gap: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 提示框 */
+        #notification { 
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); 
+            color: white; 
+            padding: 12px 30px; 
+            border-radius: 50px; 
+            display: none; 
+            z-index: 2000; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+        }
+
+        /* --- 响应式适配 --- */
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+
+            /* 侧边栏变为抽屉式 */
+            aside { 
+                position: fixed; 
+                top: 60px; 
+                left: -100%; 
+                height: calc(100vh - 60px); 
+                width: 280px; 
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+            aside.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            
+            /* 调整主内容 padding */
+            main { padding: 15px; }
+
+            /* 资源网格调整为 1列或小2列 */
+            .resource-grid { grid-template-columns: 1fr; }
+            
+            /* Q&A 变为上下布局 */
+            .qa-container { flex-direction: column; gap: 20px; }
+            .qa-form { order: 1; }
+            .qa-list { order: 2; }
+            
+            .user-info { display: none; }
+            .logo { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </div>
+            <a href="index.html" class="logo">
+                <i class="fas fa-chevron-left"></i> 返回平台
+            </a>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user-circle"></i> 学生用户：小明
+        </div>
+    </header>
+
+    <div class="layout-container">
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <aside id="sidebar">
+            <div class="sidebar-title"><i class="fas fa-book"></i> 课程目录</div>
+            
+            <div class="course-group">七年级上册 - 第一单元</div>
+            <a href="#" class="course-link active" onclick="switchCourse(this, '第1课：中学时代')">第1课：中学时代</a>
+            <a href="#" class="course-link" onclick="switchCourse(this, '第2课：学习新天地')">第2课：学习新天地</a>
+            <a href="#" class="course-link" onclick="switchCourse(this, '第3课：发现自己')">第3课：发现自己</a>
+
+            <div class="course-group">七年级上册 - 第二单元</div>
+            <a href="#" class="course-link" onclick="switchCourse(this, '第4课：友谊与成长同行')">第4课：友谊与成长同行</a>
+        </aside>
+
+        <main>
+            <h2 id="current-course-title" class="page-title">第1课：中学时代</h2>
+
+            <div class="main-tabs">
+                <div class="tab-btn active" onclick="showPanel('resources', this)">学习资源库</div>
+                <div class="tab-btn" onclick="showPanel('cloud', this)">我的云盘</div>
+                <div class="tab-btn" onclick="showPanel('qa', this)">我要提问</div>
+            </div>
+
+            <div id="panel-resources" class="content-panel active">
+                <div class="filter-tags">
+                    <div class="filter-tag active" onclick="filterRes('all', this)">全部</div>
+                    <div class="filter-tag" onclick="filterRes('book', this)">电子课本</div>
+                    <div class="filter-tag" onclick="filterRes('video', this)">补充视频</div>
+                    <div class="filter-tag" onclick="filterRes('doc', this)">阅读材料</div>
+                    <div class="filter-tag" onclick="filterRes('exam', this)">练习题</div>
+                </div>
+
+                <div class="resource-grid">
+                    <div class="res-card type-book">
+                        <div class="res-icon pdf"><i class="fas fa-book"></i></div>
+                        <div class="res-info">
+                            <div class="res-title">第1课 电子课本教材.pdf</div>
+                            <div class="res-meta"><span>教材</span> <span>5.2 MB</span></div>
+                            <div class="res-actions"><button class="btn-sm"><i class="fas fa-download"></i> 下载</button></div>
+                        </div>
+                    </div>
+                    <div class="res-card type-video">
+                        <div class="res-icon video"><i class="fas fa-play-circle"></i></div>
+                        <div class="res-info">
+                            <div class="res-title">微课：少年有梦.mp4</div>
+                            <div class="res-meta"><span>视频</span> <span>15 mins</span></div>
+                            <div class="res-actions"><button class="btn-sm"><i class="fas fa-play"></i> 播放</button></div>
+                        </div>
+                    </div>
+                     <div class="res-card type-doc">
+                        <div class="res-icon doc"><i class="fas fa-file-alt"></i></div>
+                        <div class="res-info">
+                            <div class="res-title">名人故事：周恩来的读书梦.docx</div>
+                            <div class="res-meta"><span>阅读</span> <span>230 KB</span></div>
+                            <div class="res-actions"><button class="btn-sm"><i class="fas fa-download"></i> 下载</button></div>
+                        </div>
+                    </div>
+                    <div class="res-card type-exam">
+                        <div class="res-icon doc"><i class="fas fa-clipboard-check" style="color:#FF9800; background:#FFF3E0;"></i></div>
+                        <div class="res-info">
+                            <div class="res-title">第一课时 随堂测验.pdf</div>
+                            <div class="res-meta"><span>习题</span> <span>450 KB</span></div>
+                            <div class="res-actions"><button class="btn-sm"><i class="fas fa-pen"></i> 做题</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panel-cloud" class="content-panel">
+                <div class="cloud-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h3>点击或拖拽文件到此处上传</h3>
+                    <p style="color:#999; font-size:0.9rem; margin-top:5px;">支持 PDF, Word, 图片, 视频等</p>
+                    <input type="file" id="fileInput" style="display: none;" onchange="handleUpload(this)">
+                </div>
+
+                <div class="file-list" id="cloudFileList">
+                    <div class="file-item">
+                        <div class="file-left">
+                            <i class="fas fa-file-word" style="color: #1E88E5; font-size: 1.8rem;"></i>
+                            <div class="file-info">
+                                <div class="file-name">我的课堂笔记-9月1日.docx</div>
+                                <div style="font-size: 0.8rem; color: #999;">2023-09-01 • 12 KB</div>
+                            </div>
+                        </div>
+                        <button class="btn-sm"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panel-qa" class="content-panel">
+                <div class="qa-container">
+                    <div class="qa-form">
+                        <h3 style="margin-bottom: 20px; font-size: 1.2rem;">提出你的疑问</h3>
+                        <div class="form-group">
+                            <label>问题标题</label>
+                            <input type="text" class="form-control" placeholder="简要描述问题...">
+                        </div>
+                        <div class="form-group">
+                            <label>问题描述</label>
+                            <textarea class="form-control" rows="5" placeholder="请详细描述你在学习本课时遇到的困惑..."></textarea>
+                        </div>
+                        <button class="btn-submit" onclick="submitQuestion()">提交问题</button>
+                    </div>
+
+                    <div class="qa-list" id="qaList">
+                        <div class="qa-card">
+                            <span class="qa-status status-solved">老师已解答</span>
+                            <div class="q-title">为什么说“中学时代是人生发展的一个新阶段”？</div>
+                            <div class="q-desc">我在预习的时候不太理解这句话的深层含义，是指年龄变大了吗？</div>
+                            <div class="a-box">
+                                <div class="a-user"><i class="fas fa-chalkboard-teacher"></i> 李老师 回复：</div>
+                                这不仅仅是年龄的增长，更是身心发展、自我意识觉醒的关键时期。它为我们的一生奠定重要基础，提供了多种发展的可能性。
+                            </div>
+                        </div>
+
+                        <div class="qa-card">
+                            <span class="qa-status status-pending">等待解答</span>
+                            <div class="q-title">如何处理新环境下的孤独感？</div>
+                            <div class="q-desc">刚进入初中，和小学同学分开了，感觉很孤单，这会影响学习吗？</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="notification">操作成功</div>
+
+    <script>
+        // --- 核心业务逻辑 (保持不变) ---
+
+        // 1. 切换 Tab 面板
+        function showPanel(panelName, btn) {
+            document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-' + panelName).classList.add('active');
+            
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // 2. 切换课程 (左侧)
+        function switchCourse(link, title) {
+            document.querySelectorAll('.course-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById('current-course-title').innerText = title;
+            showNotification(`已切换至：${title}`);
+            
+            // 移动端优化：选择后自动收起
+            if(window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        // 3. 资源筛选
+        function filterRes(type, btn) {
+            document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.res-card');
+            cards.forEach(card => {
+                if (type === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    if (card.classList.contains('type-' + type)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // 4. 模拟文件上传
+        function handleUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const list = document.getElementById('cloudFileList');
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'file-item';
+                newItem.innerHTML = `
+                    <div class="file-left">
+                        <i class="fas fa-file-alt" style="color: #777; font-size: 1.8rem;"></i>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div style="font-size: 0.8rem; color: #999;">刚刚 • ${(file.size/1024).toFixed(1)} KB</div>
+                        </div>
+                    </div>
+                    <button class="btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i></button>
+                `;
+                
+                list.insertBefore(newItem, list.firstChild);
+                showNotification('文件上传成功！');
+            }
+        }
+
+        // 5. 模拟提问
+        function submitQuestion() {
+            const list = document.getElementById('qaList');
+            const newQ = document.createElement('div');
+            newQ.className = 'qa-card';
+            newQ.style.animation = "fadeIn 0.5s";
+            newQ.innerHTML = `
+                <span class="qa-status status-pending">等待解答</span>
+                <div class="q-title">新提出的问题...</div>
+                <div class="q-desc">（这是一个刚刚提交的问题演示，等待老师后台回复）</div>
+            `;
+            list.insertBefore(newQ, list.firstChild);
+            showNotification('问题已发送给老师！');
+            
+            document.querySelectorAll('.form-control').forEach(i => i.value = '');
+        }
+
+        function showNotification(msg) {
+            const box = document.getElementById('notification');
+            box.innerText = msg;
+            box.style.display = 'block';
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 3000);
+        }
+
+        // --- 新增：侧边栏交互逻辑 ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
