@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智思引擎 - 个性化学习评测</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="global.js"></script>
+    <style>
+        :root {
+            --primary-color: #D32F2F;
+            --primary-light: #FFEBEE;
+            --text-dark: #333333;
+            --text-gray: #666666;
+            --bg-color: #f5f7fa;
+            --white: #ffffff;
+            --border-radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-dark); line-height: 1.6; }
+
+        /* 顶部简易导航 */
+        header { background: var(--white); padding: 15px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 20px; font-weight: bold; color: var(--primary-color); display: flex; align-items: center; gap: 8px; text-decoration: none; }
+        .back-link { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; transition: 0.3s; }
+        .back-link:hover { color: var(--primary-color); }
+
+        /* 主容器 */
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+
+        /* 问卷卡片 */
+        .survey-card { background: var(--white); border-radius: var(--border-radius); padding: 40px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 5px solid var(--primary-color); }
+
+        /* 标题区 */
+        .survey-header { text-align: center; margin-bottom: 40px; }
+        .survey-header h1 { font-size: 1.8rem; margin-bottom: 10px; }
+        .survey-header p { color: var(--text-gray); font-size: 1rem; }
+
+        /* 题目样式 */
+        .question-item { margin-bottom: 30px; opacity: 0; animation: fadeIn 0.5s forwards; }
+        .question-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px; }
+        .q-num { background: var(--primary-color); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; margin-top: 2px; }
+
+        /* 选项组 */
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        
+        /* 自定义单选/多选样式 */
+        .option-label {
+            display: flex; align-items: center; padding: 15px; border: 2px solid #eee; border-radius: 8px; cursor: pointer; transition: 0.3s; position: relative;
+        }
+        .option-label:hover { border-color: #ffcdd2; background: var(--primary-light); }
+        
+        /* 隐藏原生 input */
+        .option-label input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+        
+        /* 选中状态 */
+        .option-label input:checked ~ .custom-check { border-color: var(--primary-color); background: var(--primary-color); }
+        .option-label input:checked ~ .text { color: var(--primary-color); font-weight: bold; }
+        .option-label:has(input:checked) { border-color: var(--primary-color); background: var(--primary-light); }
+
+        /* 自定义勾选框图标 */
+        .custom-check { height: 20px; width: 20px; background-color: #fff; border: 2px solid #ccc; border-radius: 50%; display: inline-block; margin-right: 12px; position: relative; transition: 0.2s; }
+        .custom-check::after { content: ""; position: absolute; display: none; left: 6px; top: 2px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+        .option-label input:checked ~ .custom-check::after { display: block; }
+        
+        /* 方形勾选框 (针对多选) */
+        .checkbox-type .custom-check { border-radius: 4px; }
+
+        /* 提交按钮 */
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .submit-btn:hover { background: #b71c1c; box-shadow: 0 5px 15px rgba(211, 47, 47, 0.3); }
+
+        /* --- 模拟大数据分析 Loading 遮罩 --- */
+        .analyzing-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
+        .loader {
+            border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        .analysis-text { font-size: 1.2rem; color: #333; font-weight: bold; }
+        .analysis-subtext { color: #666; font-size: 0.9rem; margin-top: 5px; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="logo"><i class="fas fa-book-open"></i> 智思平台</a>
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    </header>
+
+    <div class="container">
+        <div class="survey-card">
+            <div class="survey-header">
+                <i class="fas fa-brain" style="font-size: 50px; color: var(--primary-color); margin-bottom: 15px;"></i>
+                <h1>学习习惯与兴趣偏好评测</h1>
+                <p>智思引擎将根据您的回答，通过算法为您匹配最适合的学习内容。</p>
+            </div>
+
+            <form id="surveyForm" onsubmit="return submitSurvey(event)">
+                
+                <div class="question-item" style="animation-delay: 0.1s;">
+                    <div class="question-title">
+                        <span class="q-num">1</span>
+                        <span>当你接触一个新的思政知识点（例如法律条文）时，你更倾向于哪种学习方式？</span>
+                    </div>
+                    <div class="options-grid">
+                        <label class="option-label">
+                            <input type="radio" name="q1" required>
+                            <span class="custom-check"></span>
+                            <span class="text">看案例视频分析</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q1">
+                            <span class="custom-check"></span>
+                            <span class="text">阅读逻辑导图</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q1">
+                            <span class="custom-check"></span>
+                            <span class="text">参与小组辩论</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q1">
+                            <span class="custom-check"></span>
+                            <span class="text">听老师系统讲解</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="question-item" style="animation-delay: 0.2s;">
+                    <div class="question-title">
+                        <span class="q-num">2</span>
+                        <span>在过往的学习中，让你对思政课感到枯燥的主要原因是什么？（多选）</span>
+                    </div>
+                    <div class="options-grid checkbox-type">
+                        <label class="option-label">
+                            <input type="checkbox" name="q2">
+                            <span class="custom-check"></span>
+                            <span class="text">内容脱离现实生活</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" name="q2">
+                            <span class="custom-check"></span>
+                            <span class="text">只需要死记硬背</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" name="q2">
+                            <span class="custom-check"></span>
+                            <span class="text">缺乏互动和表达机会</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="checkbox" name="q2">
+                            <span class="custom-check"></span>
+                            <span class="text">考试压力过大</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="question-item" style="animation-delay: 0.3s;">
+                    <div class="question-title">
+                        <span class="q-num">3</span>
+                        <span>你对以下哪类社会热点话题最感兴趣？</span>
+                    </div>
+                    <div class="options-grid">
+                        <label class="option-label">
+                            <input type="radio" name="q3" required>
+                            <span class="custom-check"></span>
+                            <span class="text">科技发展（AI、航天）</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q3">
+                            <span class="custom-check"></span>
+                            <span class="text">国际关系与外交</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q3">
+                            <span class="custom-check"></span>
+                            <span class="text">环境保护与生态</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="q3">
+                            <span class="custom-check"></span>
+                            <span class="text">法律案件与正义</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="question-item" style="animation-delay: 0.4s;">
+                    <div class="question-title">
+                        <span class="q-num">4</span>
+                        <span>你希望智思平台为你推荐多大难度的拓展内容？</span>
+                    </div>
+                    <div style="padding: 10px 10px;">
+                        <input type="range" min="1" max="5" value="3" style="width: 100%; accent-color: var(--primary-color);">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #666; margin-top: 10px;">
+                            <span>简单趣味</span>
+                            <span>适中</span>
+                            <span>深度挑战</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">提交评测，生成我的个性化方案</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="analyzing-overlay" id="analysisOverlay">
+        <div class="loader"></div>
+        <div class="analysis-text" id="statusText">正在连接智思数据引擎...</div>
+        <div class="analysis-subtext" id="subStatus">建立用户画像节点</div>
+    </div>
+
+    <script>
+        function submitSurvey(e) {
+            e.preventDefault(); 
+            
+            const overlay = document.getElementById('analysisOverlay');
+            const statusText = document.getElementById('statusText');
+            const subStatus = document.getElementById('subStatus');
+            
+            overlay.style.display = 'flex';
+
+            setTimeout(() => {
+                statusText.innerText = "正在分析您的学习偏好...";
+                subStatus.innerText = "处理维度：视觉/听觉/逻辑偏向";
+            }, 1000);
+
+            setTimeout(() => {
+                statusText.innerText = "正在匹配个性化思政资源...";
+                subStatus.innerText = "检索库：视频微课、时事热点库";
+            }, 2500);
+
+            setTimeout(() => {
+                statusText.innerText = "方案生成完毕！";
+                subStatus.innerText = "即将跳转...";
+            }, 4000);
+
+            setTimeout(() => {
+                alert("个性化方案已生成！\n\n根据分析，为您推荐：\n1. 【视频】大国重器背后的法律保障\n2. 【互动】模拟法庭：校园霸凌案\n\n(演示结束，返回首页)");
+                window.location.href = 'index.html';
+            }, 5000);
+
+            return false;
+        }
+    </script>
+</body>
+</html>

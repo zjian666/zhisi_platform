@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教研工作台 - 智思平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="global.js"></script>
+    <style>
+        /* --- 全局变量 (保持与 index.html 一致) --- */
+        :root {
+            --primary-color: #D32F2F;
+            --primary-light: #FFEBEE;
+            --text-main: #333;
+            --text-sub: #666;
+            --border-color: #e4e6eb;
+            --bg-light: #f5f7fa;
+            --white: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif; 
+            color: var(--text-main); 
+            background: var(--bg-light); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; /* 防止双滚动条 */
+        }
+
+        /* --- 顶部导航 --- */
+        header { 
+            height: 60px; 
+            background: var(--white); 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            padding: 0 20px; 
+            justify-content: space-between; 
+            flex-shrink: 0; 
+            z-index: 1001;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 移动端菜单按钮 (默认隐藏) */
+        .mobile-menu-btn {
+            display: none;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .logo-link { 
+            font-weight: bold; 
+            color: var(--primary-color); 
+            text-decoration: none; 
+            font-size: 1rem;
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+        }
+        
+        .user-info { 
+            font-size: 0.9rem; 
+            color: var(--text-sub); 
+            background: var(--bg-light);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        /* --- 布局容器 --- */
+        .layout-container { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+        /* --- 左侧侧边栏 --- */
+        .sidebar { 
+            width: 260px; 
+            background: var(--white); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .sidebar-header { 
+            padding: 15px 20px; 
+            font-weight: bold; 
+            border-bottom: 1px solid var(--border-color); 
+            background: #fafafa; 
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        .course-tree { overflow-y: auto; flex: 1; }
+        .course-tree ul { list-style: none; }
+        
+        .course-group-title { 
+            padding: 12px 20px; 
+            font-size: 0.85rem; 
+            color: #999; 
+            font-weight: bold; 
+            background: #fdfdfd; 
+            margin-top: 5px;
+        }
+
+        .course-item { 
+            display: block; 
+            padding: 12px 20px 12px 30px; 
+            cursor: pointer; 
+            color: var(--text-main); 
+            text-decoration: none; 
+            font-size: 0.95rem; 
+            transition: 0.2s; 
+            border-left: 3px solid transparent; 
+        }
+
+        .course-item:hover { background: var(--bg-light); color: var(--primary-color); }
+        .course-item.active { 
+            background: var(--primary-light); 
+            border-left-color: var(--primary-color); 
+            color: var(--primary-color); 
+            font-weight: bold; 
+        }
+
+        /* 遮罩层 (移动端用) */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        /* --- 右侧主内容 --- */
+        .main-content { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--bg-light); 
+            overflow-y: auto; 
+            position: relative;
+        }
+
+        /* 顶部：流程图区域 */
+        .process-flow { 
+            background: var(--white); 
+            padding: 30px 20px; 
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .flow-title { 
+            margin-bottom: 25px; 
+            font-size: 1.4rem; 
+            text-align: center; 
+            color: var(--text-main);
+        }
+        
+        .stepper-wrapper { 
+            display: flex; 
+            justify-content: space-between; 
+            position: relative; 
+            max-width: 600px; 
+            margin: 0 auto; 
+        }
+        
+        /* 进度条连线 */
+        .stepper-wrapper::before { 
+            content: ""; 
+            position: absolute; 
+            top: 18px; 
+            left: 5%; 
+            width: 90%; 
+            height: 2px; 
+            background: #e0e0e0; 
+            z-index: 0; 
+        }
+        
+        .stepper-item { 
+            position: relative; 
+            z-index: 1; 
+            text-align: center; 
+            flex: 1;
+            cursor: pointer; 
+        }
+
+        .step-counter { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            background: var(--white); 
+            border: 2px solid #ccc; 
+            color: #ccc; 
+            margin: 0 auto 8px; 
+            line-height: 32px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            transition: var(--transition); 
+        }
+
+        .step-name { 
+            font-size: 0.9rem; 
+            color: #999; 
+            font-weight: bold; 
+            transition: var(--transition); 
+        }
+
+        /* 激活状态 */
+        .stepper-item.active .step-counter { 
+            background: var(--primary-color); 
+            border-color: var(--primary-color); 
+            color: #fff; 
+            transform: scale(1.1); 
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.3);
+        }
+        .stepper-item.active .step-name { color: var(--primary-color); }
+        .stepper-item:hover .step-counter { border-color: var(--primary-color); color: var(--primary-color); }
+        .stepper-item.active:hover .step-counter { color: #fff; }
+
+        /* --- 下方：论坛交流区 --- */
+        .forum-wrapper {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .forum-area { 
+            animation: fadeIn 0.4s; 
+            display: none; 
+        }
+        .forum-area.current-step { display: block; }
+
+        .forum-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .forum-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .forum-header h3 { font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+        .forum-tag { 
+            background: var(--primary-light); 
+            color: var(--primary-color); 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+        }
+        
+        /* 发帖框 */
+        .post-input textarea { 
+            width: 100%; 
+            height: 100px; 
+            padding: 15px; 
+            border: 1px solid #eee; 
+            border-radius: 8px; 
+            resize: vertical; 
+            margin-bottom: 15px; 
+            font-family: inherit;
+            background: #fafafa;
+            transition: var(--transition);
+        }
+        .post-input textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: #fff;
+        }
+
+        .btn-post { 
+            background: var(--primary-color); 
+            color: white; 
+            border: none; 
+            padding: 10px 25px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            float: right; 
+            font-weight: bold;
+            transition: var(--transition);
+        }
+        .btn-post:hover { background: #b71c1c; transform: translateY(-1px); }
+
+        /* 评论列表 */
+        .discussion-list { margin-top: 10px; }
+        
+        .discussion-item { 
+            display: flex; 
+            gap: 15px; 
+            border-bottom: 1px solid #eee; 
+            padding: 20px 0; 
+        }
+        .discussion-item:last-child { border-bottom: none; }
+
+        .avatar { 
+            width: 40px; 
+            height: 40px; 
+            background: #eee; 
+            border-radius: 50%; 
+            flex-shrink: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: #999; 
+            font-size: 1.1rem;
+        }
+
+        .discussion-content h4 { font-size: 0.95rem; margin-bottom: 5px; color: var(--text-main); }
+        .discussion-content p { color: var(--text-sub); font-size: 0.9rem; line-height: 1.6; }
+        .discussion-meta { margin-top: 8px; font-size: 0.8rem; color: #aaa; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 响应式适配 --- */
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+            
+            /* 侧边栏变为抽屉式 */
+            .sidebar { 
+                position: fixed; 
+                top: 60px; /* header height */
+                left: -100%; 
+                height: calc(100vh - 60px); 
+                width: 280px; 
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+
+            .user-info { display: none; } /* 手机端隐藏用户名以节省空间 */
+            
+            .forum-wrapper { padding: 15px; }
+            .forum-card { padding: 15px; }
+            
+            .stepper-item .step-name { font-size: 0.8rem; }
+            .stepper-wrapper::before { top: 16px; } /* 微调线条位置 */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </div>
+            <a href="index.html" class="logo-link">
+                <i class="fas fa-chevron-left"></i> 
+                <span>返回平台</span>
+            </a>
+        </div>
+        <div class="user-info">教研系统</div>
+    </header>
+
+    <div class="layout-container">
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-list"></i> 课程目录
+            </div>
+            <div class="course-tree">
+                <div class="course-group-title">七年级上册 - 第一单元</div>
+                <ul>
+                    <li><a href="#" class="course-item active" onclick="selectCourse(this, '第1课：中学时代')">第1课：中学时代</a></li>
+                    <li><a href="#" class="course-item" onclick="selectCourse(this, '第2课：学习新天地')">第2课：学习新天地</a></li>
+                    <li><a href="#" class="course-item" onclick="selectCourse(this, '第3课：发现自己')">第3课：发现自己</a></li>
+                </ul>
+                <div class="course-group-title">七年级上册 - 第二单元</div>
+                <ul>
+                    <li><a href="#" class="course-item" onclick="selectCourse(this, '第4课：友谊与成长同行')">第4课：友谊与成长同行</a></li>
+                    <li><a href="#" class="course-item" onclick="selectCourse(this, '第5课：交友的智慧')">第5课：交友的智慧</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="process-flow">
+                <h2 class="flow-title" id="courseTitle">第1课：中学时代</h2>
+                <div class="stepper-wrapper">
+                    <div class="stepper-item active" onclick="switchStep(1)">
+                        <div class="step-counter">1</div>
+                        <div class="step-name">备课思路</div>
+                    </div>
+                    <div class="stepper-item" onclick="switchStep(2)">
+                        <div class="step-counter">2</div>
+                        <div class="step-name">模课心得</div>
+                    </div>
+                    <div class="stepper-item" onclick="switchStep(3)">
+                        <div class="step-counter">3</div>
+                        <div class="step-name">体系论证</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="forum-wrapper">
+                <div id="forum-step-1" class="forum-area current-step">
+                    <div class="forum-card">
+                        <div class="forum-header">
+                            <h3><i class="fas fa-pencil-alt" style="color:var(--primary-color)"></i> 备课思路探讨</h3>
+                            <span class="forum-tag">教案构思</span>
+                        </div>
+                        <div class="post-input">
+                            <textarea placeholder="分享您关于本课时的备课思路，或提出困惑..."></textarea>
+                            <button class="btn-post">发布想法</button>
+                            <div style="clear:both;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="forum-card">
+                        <div class="discussion-list">
+                            <div class="discussion-item">
+                                <div class="avatar"><i class="fas fa-user"></i></div>
+                                <div class="discussion-content">
+                                    <h4>王老师 (北京市某中学)</h4>
+                                    <p>关于《中学时代》这一课，我打算用“时光胶囊”作为导入活动，让学生写下对未来的期许，大家觉得这个切入点如何？是否会太抽象？</p>
+                                    <div class="discussion-meta">2023-10-24 10:30 • 12条回复</div>
+                                </div>
+                            </div>
+                            <div class="discussion-item">
+                                <div class="avatar"><i class="fas fa-user"></i></div>
+                                <div class="discussion-content">
+                                    <h4>张老师 (教研组长)</h4>
+                                    <p>重点应该放在“角色转变”上，小学到中学的心理变化是备课的核心难点，建议多准备一些案例。</p>
+                                    <div class="discussion-meta">2023-10-24 11:15 • 5条回复</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="forum-step-2" class="forum-area">
+                    <div class="forum-card">
+                        <div class="forum-header">
+                            <h3><i class="fas fa-chalkboard-teacher" style="color:var(--primary-color)"></i> 模课心得交流</h3>
+                            <span class="forum-tag">实战复盘</span>
+                        </div>
+                        <div class="post-input">
+                            <textarea placeholder="上传您的模课视频链接，或分享讲课后的心得..."></textarea>
+                            <button class="btn-post">发布心得</button>
+                            <div style="clear:both;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="forum-card">
+                        <div class="discussion-list">
+                            <div class="discussion-item">
+                                <div class="avatar"><i class="fas fa-user"></i></div>
+                                <div class="discussion-content">
+                                    <h4>刘老师</h4>
+                                    <p>今天试讲了第二小节，发现学生对于“梦想”的定义比较模糊，我在课堂上临时增加了一个小组讨论，效果出奇的好。这是我的板书设计图 [图片]。</p>
+                                    <div class="discussion-meta">2023-10-25 09:20 • 8条回复</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="forum-step-3" class="forum-area">
+                    <div class="forum-card">
+                        <div class="forum-header">
+                            <h3><i class="fas fa-gavel" style="color:var(--primary-color)"></i> 课程体系论证</h3>
+                            <span class="forum-tag">价值评估</span>
+                        </div>
+                        <div class="post-input">
+                            <textarea placeholder="发起关于本课时在整体课程体系中价值的讨论..."></textarea>
+                            <button class="btn-post">发起论证</button>
+                            <div style="clear:both;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="forum-card">
+                        <div class="discussion-list">
+                            <div class="discussion-item">
+                                <div class="avatar"><i class="fas fa-user"></i></div>
+                                <div class="discussion-content">
+                                    <h4>智思教研组</h4>
+                                    <p>【体系评估】本课作为初中起始课，其“奠基性”功能是否在目前的教案中得到了充分体现？请各位老师结合课标进行论证。</p>
+                                    <div class="discussion-meta">置顶 • 2023-10-20 • 45条回复</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function switchStep(stepNum) {
+            const steps = document.querySelectorAll('.stepper-item');
+            steps.forEach((step, index) => {
+                if (index + 1 === stepNum) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+
+            const forums = document.querySelectorAll('.forum-area');
+            forums.forEach(forum => forum.classList.remove('current-step'));
+            
+            const targetForum = document.getElementById('forum-step-' + stepNum);
+            if(targetForum) {
+                targetForum.classList.add('current-step');
+            }
+        }
+
+        function selectCourse(element, title) {
+            document.querySelectorAll('.course-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            document.getElementById('courseTitle').innerText = title;
+            switchStep(1);
+            
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const step = parseInt(urlParams.get('step'));
+            if (step >= 1 && step <= 3) {
+                switchStep(step);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
